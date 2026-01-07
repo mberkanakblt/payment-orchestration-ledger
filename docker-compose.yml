@@ -1,0 +1,37 @@
+
+services:
+  db:
+    image: postgres:15
+    container_name: paycoredb
+    environment:
+      POSTGRES_DB: paycoredb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - paycore-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paycore-app
+    ports:
+      - "9090:9090"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/paycoredb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+    networks:
+      - paycore-network
+
+volumes:
+  pgdata:
+
+networks:
+  paycore-network:
