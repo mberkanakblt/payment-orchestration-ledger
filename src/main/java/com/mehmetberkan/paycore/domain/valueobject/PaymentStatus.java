@@ -48,21 +48,10 @@ public class PaymentStatus {
         };
     }
 
-    public static PaymentStatus fromString(String value) {
-        try {
-            return of(Status.valueOf(value.toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new DomainException("Invalid payment status: " + value);
-        }
-    }
-
     public boolean canCapture() {
         return CAN_CAPTURE_FROM.contains(this.value);
     }
 
-    public boolean isDeclined() {
-        return this.value == Status.DECLINED;
-    }
 
     public boolean canRefund() {
         return CAN_REFUND_FROM.contains(this.value);
@@ -72,46 +61,11 @@ public class PaymentStatus {
         return CAN_VOID_FROM.contains(this.value);
     }
 
-    public PaymentStatus capture() {
-        if (!canCapture()) {
-            throw new DomainException("Payment cannot be captured from status: " + this.value);
-        }
-        return CAPTURED;
-    }
-
-    public PaymentStatus refund() {
-        if (!canRefund()) {
-            throw new DomainException("Payment cannot be refunded from status: " + this.value);
-        }
-        return REFUNDED;
-    }
-
-    public PaymentStatus voidPayment() {
-        if (!canVoid()) {
-            throw new DomainException("Payment cannot be voided from status: " + this.value);
-        }
-        return VOID;
-    }
-
-    public boolean isAuthorized() {
-        return this.value == Status.AUTHORIZED;
-    }
-
-    public boolean isCaptured() {
-        return this.value == Status.CAPTURED;
-    }
 
     public boolean isVoid() {
         return this.value == Status.VOID;
     }
 
-    public boolean isRefunded() {
-        return this.value == Status.REFUNDED;
-    }
-
-    public boolean isTerminal() {
-        return this.value == Status.VOID || this.value == Status.REFUNDED;
-    }
 
     @Override
     public boolean equals(Object o) {
