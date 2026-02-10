@@ -1,10 +1,13 @@
 package com.mehmetberkan.paycore.application.service;
 
-import com.mehmetberkan.paycore.domain.enums.EntryType;
-import com.mehmetberkan.paycore.domain.model.LedgerEntry;
+import com.mehmetberkan.paycore.api.dto.response.LedgerEntryDto;
+import com.mehmetberkan.paycore.application.port.in.LedgerUseCase;
+import com.mehmetberkan.paycore.application.port.out.LedgerPort;
+import com.mehmetberkan.paycore.domain.aggregate.Ledger;
 import com.mehmetberkan.paycore.domain.valueobject.Money;
-import com.mehmetberkan.paycore.infrastructure.repository.LedgerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,41 +15,46 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class LedgerService {
+public class LedgerService implements LedgerUseCase {
 
-    private final LedgerRepository ledgerRepository;
+    private final LedgerPort ledgerPort;
 
     @Transactional
     public void createDoubleEntry(Long debitAccountId, Long creditAccountId, Money amount, String txnRef) {
         Long pairId = System.currentTimeMillis();
 
-        LedgerEntry debitEntry = LedgerEntry.builder()
-                .entryType(EntryType.DEBIT)
-                .accountId(debitAccountId)
-                .amount(amount)
-                .currency(amount.getCurrency())
-                .pairId(pairId)
-                .txnRef(txnRef)
-                .build();
+        Ledger debitEntry = Ledger.createDebitEntry(debitAccountId, amount, pairId, txnRef);
+        Ledger creditEntry = Ledger.createCreditEntry(creditAccountId, amount, pairId, txnRef);
 
-        LedgerEntry creditEntry = LedgerEntry.builder()
-                .entryType(EntryType.CREDIT)
-                .accountId(creditAccountId)
-                .amount(amount)
-                .currency(amount.getCurrency())
-                .pairId(pairId)
-                .txnRef(txnRef)
-                .build();
-
-        ledgerRepository.save(debitEntry);
-        ledgerRepository.save(creditEntry);
+        ledgerPort.save(debitEntry);
+        ledgerPort.save(creditEntry);
     }
 
-    public List<LedgerEntry> getEntriesByAccountId(Long accountId) {
-        return ledgerRepository.findByAccountId(accountId);
+    public List<Ledger> getEntriesByAccountId(Long accountId) {
+        return ledgerPort.findByAccountId(accountId);
     }
 
-    public List<LedgerEntry> getEntriesByPairId(Long pairId) {
-        return ledgerRepository.findByPairId(pairId);
+    public List<Ledger> getEntriesByPairId(Long pairId) {
+        return ledgerPort.findByPairId(pairId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LedgerEntryDto> getLedgerByAccountId(Long accountId, Pageable pageable) {
+        return ledgerPort.findByAccountIdPaged(accountId, pageable)
+                .map(this::toDto);
+    }
+
+    private LedgerEntryDto toDto(Ledger ledger) {
+        return LedgerEntryDto.builder()
+                .id(ledger.getId())
+                .entryType(ledger.getEntryType())
+                .accountId(ledger.getAccountId())
+                .amount(ledger.getAmount().getAmount())
+                .currency(ledger.getCurrency())
+                .createdAt(ledger.getCreatedAt())
+                .pairId(ledger.getPairId())
+                .txnRef(ledger.getTxnRef())
+                .build();
     }
 }

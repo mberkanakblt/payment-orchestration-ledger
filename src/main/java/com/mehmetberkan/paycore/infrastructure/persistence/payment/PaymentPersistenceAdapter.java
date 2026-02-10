@@ -5,6 +5,8 @@ import com.mehmetberkan.paycore.domain.aggregate.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -32,5 +34,12 @@ public class PaymentPersistenceAdapter implements PaymentPort {
         return paymentJpaRepository.findByIdempotencyKey(idempotencyKey)
                 .map(mapper::toDomain);
     }
-}
 
+    @Override
+    public List<Payment> findByCreatedAtBetween(Instant start, Instant end) {
+        return paymentJpaRepository.findByCreatedAtBetween(start, end)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+}

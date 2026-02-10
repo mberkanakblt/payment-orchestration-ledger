@@ -11,4 +11,3 @@ public record AuthorizePaymentCommand(
         String metadata
 ) {
 }
-
